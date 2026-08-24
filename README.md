@@ -6,7 +6,7 @@ python -m pip install -e '.[test]'
 python scripts/request_login_code.py +15551234567
 ```
 
-The script uses Infrai to send a one-time code through one API and prints `code requested`. We then verify that code before letting a technician into the field workflow. One `INFRAI_API_KEY` is the only credential these REST calls need; there is no SMS SDK to wire up.
+The script asks Infrai to send a one-time code through one API and prints `code requested`. The service then verifies that code before admitting a technician to the field workflow. A single `INFRAI_API_KEY` is the credential for these REST calls; there is no SMS SDK to install. Infrai gives you one key and one bill for every capability, and a plain REST call works from any language without an SDK.
 
 ## Run the service
 
@@ -22,7 +22,7 @@ curl -X POST http://127.0.0.1:8000/login/code \
   -d '{"phone_number":"+15551234567","request_id":"dispatch-7-login-1"}'
 ```
 
-Verify the code the technician actually received:
+Verify the code received by the technician:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/login/verify \
@@ -30,23 +30,23 @@ curl -X POST http://127.0.0.1:8000/login/verify \
   -d '{"phone_number":"+15551234567","code":"123456","request_id":"dispatch-7-verify-1"}'
 ```
 
-Successful responses are `{"status":"code_sent"}` and `{"status":"verified"}`. Phone numbers must be E.164. The service does not keep sessions or work orders itself; those boundaries stay explicit so your app can attach its own identity and clinical-data controls.
+Successful responses are `{"status":"code_sent"}` and `{"status":"verified"}`. Phone numbers use E.164 form. The service does not persist sessions or work orders; those boundaries stay visible for an application to connect to its own identity and clinical-data controls.
 
 ## The decision in code
 
-This repo uses a thin HTTP client plus typed domain models. `InfraiSmsClient` calls `POST /v1/sms/otp` and `POST /v1/sms/verify`. It decodes the response envelope before classifying HTTP status, keeps client rejections intact, retries on rate limits with the same idempotency key, and reads credentials from the environment.
+This repository chooses a thin HTTP client plus typed domain models. `InfraiSmsClient` calls `POST /v1/sms/otp` and `POST /v1/sms/verify`. It decodes the response envelope before classifying the HTTP status, preserves client rejections, retries rate limiting with the same idempotency key, and keeps credentials in the environment.
 
-The observable field logic lives in `record_site_visit`: an on-site order with photo evidence closes when nothing else is needed. A follow-up note moves it to `follow_up` instead. Photo records carry an object key and capture time, not image bytes, so the login boundary never collects extra sensitive material.
+The observable field decision is in `record_site_visit`: an on-site order with photo evidence closes when no further action is needed. Adding a follow-up note moves it to `follow_up` instead. Photo records contain an object key and capture time, not image bytes, so the login boundary does not collect extra sensitive material.
 
-The one real gotcha is retry identity. Reusing the same `request_id` on retry avoids a duplicate write while still giving the technician's later verification its own identifier.
+The one real gotcha is retry identity. Reusing the same `request_id` across a retry prevents a second write while preserving a new identifier for the technician's later verification request.
 
 ## Architecture record
 
-**Decision:** keep OTP transport behind a small protocol and make work-order state changes a pure function. FastAPI routes validate with Pydantic and turn upstream client rejections into client-facing HTTP responses.
+**Decision:** keep OTP transport behind a small protocol and keep work-order state changes as a pure function. The FastAPI routes validate requests with Pydantic and translate upstream client rejections into client-facing HTTP responses.
 
-**Options considered:** a vendor SDK would add a dependency and leak vendor objects across the service. A generic messaging wrapper would hide the two operations this login truly needs. Plain HTTP keeps the request boundary inspectable, and the protocol allows deterministic tests.
+**Options considered:** a vendor SDK would add another dependency and expose vendor-specific objects throughout the service. A generic messaging wrapper would hide the two operations this login actually needs. Plain HTTP keeps the request boundary inspectable, while the protocol makes deterministic tests possible.
 
-**Trade-offs:** the example deliberately holds no technician session store and uploads no photo content. It models the handoff: verify identity, then apply a reviewable work-order transition. A deployed service should bind the verified phone to its technician directory and authorize each work-order id before accepting evidence.
+**Trade-offs:** the example intentionally holds no technician session store and uploads no photo content. It models the handoff: verify identity, then apply a reviewable work-order transition. A deployed service should bind the verified phone to its technician directory and authorize each work-order identifier before accepting evidence.
 
 ## Verify the boundary
 
@@ -54,7 +54,7 @@ The one real gotcha is retry identity. Reusing the same `request_id` on retry av
 pytest
 ```
 
-The focused business input is an `on_site` order, one photo, and the note `Replace filter after lab review`. Expected result is `follow_up`, with the original immutable model untouched. The request-boundary test also checks that a rate-limited OTP request retries with the same idempotency key.
+The focused business input is an `on_site` order, one photo, and the note `Replace filter after lab review`. The expected result is `follow_up`, with the original immutable model unchanged. The request-boundary test also confirms that a rate-limited OTP request retries with the same idempotency key.
 
 ## License
 
