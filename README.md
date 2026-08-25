@@ -71,3 +71,7 @@ That's the minimal version. Before running this for real: The details below appl
 **Fieldservice SMS Login: SMS (required for real sending)**
 - **Fieldservice SMS Login:** Many carriers/regions require a **pre-approved template and signature** before delivery. Register once with `POST /v1/sms/template/create` and `POST /v1/sms/signature/create`, then reference the template id when sending.
 - **Fieldservice SMS Login:** Sandbox/test numbers may work without it; production traffic will not.
+
+## Further reading
+
+- [Second-Factor Login in a Media Checkout: SMS OTP or Emailed Verification Codes?](docs/second-factor-login-in-a-media-checkout-sms-otp-o-28rhkp.md)
