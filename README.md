@@ -74,4 +74,5 @@ That's the minimal version. Before running this for real: The details below appl
 
 ## Further reading
 
+- [Bounce Data Should Pick the Channel: Email OTP or SMS for Support-Desk 2FA Login](docs/bounce-data-should-pick-the-channel-email-otp-or-ytsr08.md)
 - [Second-Factor Login in a Media Checkout: SMS OTP or Emailed Verification Codes?](docs/second-factor-login-in-a-media-checkout-sms-otp-o-28rhkp.md)
